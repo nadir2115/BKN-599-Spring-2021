@@ -1,0 +1,177 @@
+---
+title: "Week 1- ggplot, dplyr"
+author: "Nadir Nibras"
+date: "1/15/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# clearing code, enviro
+```{r}
+rm(list = ls());
+cat("\014")  
+graphics.off() 
+```
+# Makes text bigger
+## Slightly smaller text
+This is a R notebook
+
+```{r}
+x = 2
+y =3
+z = x+y
+```
+
+# 2nd chunk
+
+```{r}
+x =5
+y =6
+x+y
+```
+
+# using variables in text output
+The summed value is `r z`
+
+```{r Loading dataframes and packages}
+setwd("C:/Users/nadir/Documents/Assignments & notes/Year 10- Teaching/BKN 599/BKN-599-Spring-2021/Week 1- Jan 15")
+load("C:/Users/nadir/Documents/Assignments & notes/Year 10- Teaching/BKN 599/BKN-599-Spring-2021/Week 1- Jan 15/vaf_all_data.rda")
+
+# install.packages("ggplot2")
+library(ggplot2)
+# install.packages("dplyr")
+library(dplyr)
+
+df = PC_data_allgroups_uncorrected_difficulty
+df = df[complete.cases(df$NoPeaks_mean),]
+
+df2 = df[1:100, 1:10]
+```
+
+
+# GGPlot
+```{r}
+# base plot 
+ggplot(df, aes(x = SAL_mean, y = NoPeaks_mean))
+
+# base plot + scatter plot
+ggplot(df, aes(x = SAL_mean, y = NoPeaks_mean))+
+  geom_point(alpha =0.02)
+
+# histogram
+ggplot(df, aes(NoPeaks_mean))+geom_histogram()
+ggplot(df, aes(NoPeaks_mean))+geom_histogram(col = "green", fill ="red")
+
+# boxplot
+ggplot(df,aes(NoPeaks_mean))+ geom_boxplot()
+
+# overlaying plots
+ggplot(df, aes(NoPeaks_mean))+ 
+  geom_histogram(bins = 50)+
+  geom_boxplot(width = 200)
+
+ggplot(df, aes(Group_no))+geom_bar()
+ggplot(df, aes(NoPeaks_mean))+geom_bar(width = 0.05, alpha = 0.2)
+
+df$Group_no = as.factor(df$Group_no)
+ggplot(df, aes(Group_no, NoPeaks_mean, fill = Group_no))+
+  geom_bar(stat = "summary", fun ="mean")+
+  geom_point(alpha = 0.03,position = position_jitter(0.05))+
+  ylim(c(0,15))a
+
+ggplot(PC_data_stroke,aes(Session_no, NoPeaks_mean))+geom_point()+facet_wrap(~Subject_no)
+
+df_stroke_8 = PC_data_stroke[PC_data_stroke$Subject_no<9, ]
+
+ggplot(df_stroke_8,aes(Session_no, NoPeaks_mean))+geom_point()+facet_wrap(~Subject_no)
+
+
+# facet_wrap_paginate
+ggplot(df_stroke_8,aes(Session_no, NoPeaks_mean, col = Difficulty_level))+
+  geom_point()+
+  facet_wrap(~Subject_no,scales = "free")+
+  labs(x= "Session no", y = "Mean number of velocity peaks")+
+  ggtitle("Progression of velocity peaks with training")+
+  theme(
+    plot.title = element_text(22),
+    axis.title.x = element_text(size = 15, angle = 0),
+    axis.title.y = element_text(size = 15, angle = 90),
+    axis.line = element_line(color = "black"),
+    strip.background= element_blank(),
+    panel.background = element_blank(),
+    legend.title= element_blank()
+    )
+
+ggplot(df_stroke_8,aes(Session_no, NoPeaks_mean, shape = Difficulty_level))+
+  geom_point()+
+  facet_wrap(~Subject_no,scales = "free")+
+  labs(x= "Session no", y = "Mean number of velocity peaks")+
+  ggtitle("Progression of velocity peaks with training")+
+  theme_bw()
+
+ggsave("plot.pdf")
+```
+
+
+# Dplyr
+```{r}
+summaries = summarise(df, mean_of_means_no_peaks = mean(NoPeaks_mean),
+                       median_of_means_no_peaks = median(NoPeaks_mean))
+
+summaries = df %>% summarise(mean_of_means_no_peaks = mean(NoPeaks_mean),
+                       median_of_means_no_peaks = median(NoPeaks_mean))
+# Group_by 
+group_summaries = df %>% group_by(Group_no) %>% summarise( no_peaks_mean = mean(NoPeaks_mean), no_peaks_median = median(NoPeaks_mean))
+
+df$new_perf = df$NoPeaks_mean + df$SAL_mean
+
+df = df %>% mutate( new_perf = NoPeaks_mean + SAL_mean)
+
+df_smooth = df %>% filter ( NoPeaks_mean < 5)
+df_smooth = df %>% filter( NoPeaks_mean < quantile( df$NoPeaks_mean, .95 ))
+
+df = distinct(df)
+
+# Sample 
+df_sample = df %>% sample_frac(0.5, replace = FALSE) 
+df_samplen = df %>% sample_n(100, replace = FALSE) 
+
+df_left = data.frame(
+  subject = c("A","B","C"), var1 = c(1,2,3))
+df_right = data.frame(
+  subject = c("A","B","D"), var2 = c(TRUE,TRUE,FALSE))
+
+left_join(df_left, df_right)
+right_join(df_left, df_right)
+inner_join(df_left, df_right)
+full_join(df_left, df_right)
+
+
+df_left = df_left %>% rename( variable.1 = var1)
+
+load("C:/Users/nadir/Documents/Assignments & notes/Year 10- Teaching/BKN 599/BKN-599-Spring-2021/Week 1- Jan 15/exoskeleton_angles.rda")
+
+# BAD WAY TO DO IT- don't do it
+ggplot(joint_angles)+
+  geom_line(aes(session_time, shoulder_horizontal_angle), col = "blue")+
+ geom_line(aes(session_time, shoulder_elevation_angle), col = "red")
+
+
+# 
+library(tidyr)
+angles_gather = gather(joint_angles[, 1:7], key = "joint_name", value = "angle", c(-"session_time"))
+
+ggplot(angles_gather,aes(session_time, angle, col = joint_name))+
+  geom_point(size =0.2)
+
+# summarise (df, mean_of_means_no_peaks = mean(NoPeaks_mean),
+                       # median_of_means_no_peaks = median(NoPeaks_mean))
+```
+
+
+
