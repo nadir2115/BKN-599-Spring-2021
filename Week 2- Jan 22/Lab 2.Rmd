@@ -1,0 +1,79 @@
+---
+title: "Lab 2- Linear regression"
+author: "Nadir Nibras"
+date: "1/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# clear workspace variables
+rm(list = ls());
+# it means ctrl+L. clear window
+cat("\014") 
+# close all plots
+graphics.off() 
+
+```
+
+# Loading dataframe
+```{r}
+advertising= read.csv("Advertising.csv")
+library(ggplot2)
+
+  
+
+plot(advertising$TV, advertising$sales)
+
+advertising$y_hat = 0.1*advertising$TV+ 6
+ggplot(advertising, aes(TV, sales))+geom_point()+
+  geom_line(aes(advertising$TV, advertising$y_hat))
+
+error_vector = advertising$y_hat - advertising$sales
+RSS = sum((error_vector)^2)
+
+Beta0 = seq( 5,9, length = 200)
+Beta1 = seq(0.02,0.07,length=200)
+
+RSS_matrix= matrix(0, nrow = 200, ncol = 200)
+
+y = advertising$sales
+x = advertising$TV
+for (i in 1:200){
+  for(j in 1:200){
+    y_hat = Beta0[i]+ Beta1[j]*x
+    RSS_matrix[i,j] = sum((y-y_hat)^2)
+
+  }
+}
+
+contour(Beta0, Beta1, RSS_matrix)
+persp(Beta1,Beta0,RSS_matrix, theta =90, zlim = c(0,3000))
+
+image(Beta0, Beta1, RSS_matrix, zlim = c(2100,2500))
+min(RSS_matrix)
+
+which(RSS_matrix == min(RSS_matrix), arr.ind = TRUE)
+Beta0[101]
+Beta1[111]
+
+advertising$y_hat = 0.1*advertising$TV+ 6
+ggplot(advertising, aes(TV, sales))+geom_point()+
+  geom_line(aes(advertising$TV, advertising$y_hat))
+
+
+
+```
+
+# Creating linear model
+```{r}
+lin_mod = lm(sales ~ TV, advertising)
+
+coefficients(lin_mod)
+summary(lin_mod)
+```
+
