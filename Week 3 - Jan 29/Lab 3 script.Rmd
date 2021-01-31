@@ -1,0 +1,144 @@
+---
+title: "Lab 3- BKN 599 Spring  21"
+author: "Nadir Nibras"
+date: "1/29/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# clear workspace variables
+rm(list = ls());
+# it means ctrl+L. clear window
+cat("\014") 
+# close all plots
+graphics.off() 
+```
+
+
+# Recreating figure 3.3
+```{r}
+values = matrix(0, nrow = 10, ncol =2)
+
+for ( i in 1:10){
+  # Gennerating a sample of x values
+  x = runif(100, min = -2, max =2)
+  
+  # calculate y based on x and noise
+  rand_noise  = runif(100, max= 3, min = -3)
+  y = 2+3*x+ rand_noise
+  
+  # Calculate B0 and B based on the sample data()
+  lin_mod = lm(y~x)
+  # plot(x,y)
+  values[i,]=coef(lin_mod)
+}
+
+plot(x,y, type = "n")
+for (i in 1:10){
+  abline(values[i,1], values[i,2], col = "blue", alpha = 0.5)
+}
+```
+
+
+# 3.6.3
+```{r}
+library(MASS)
+# Multiple regression model with 2 predictors
+lm.fit = lm(medv~lstat + age, data = Boston)
+summary(lm.fit)
+
+# multiple regression model using all variables as predictors
+lm.fit= lm( medv~., data = Boston)
+summary(lm.fit)
+
+# fitting model on all variables except certain ones
+lm.fit1 = lm(medv~.-age, data =Boston)
+summary(lm.fit1)
+
+# Doing previous step in a different way
+lm.fit1_update_method = update(lm.fit, ~.-age)
+summary(lm.fit1_update_method)
+```
+
+
+# 3.6.4- Interaction terms
+```{r}
+lm.fit_interaction = lm(medv~age + lstat+ lstat:age)
+summary(lm.fit_interaction)
+
+lm.fit_interaction2=  lm(medv~ age*lstat*crim- age)
+summary(lm.fit_interaction2)
+```
+# 3.6.5 - non-linear transformations of predictors
+```{r}
+# quadratic fit on lstat
+lm.fit2 = lm(medv~ lstat + I(lstat^2))
+summary(lm.fit2)
+
+library(ggplot2)
+ggplot(Boston, aes(lstat,medv))+geom_point()
+
+lm.fit = lm(medv~lstat, data = Boston)
+
+x = c(1:60)
+y_hat = predict(lm.fit, data.frame(x), interval = "prediction")
+
+install.packages("jtools")
+library(jtools)
+
+# effect_plot(lm.fit, pred = displ)
+
+df= data.frame(x, y_hat = coef(lm.fit2)[1]+ coef(lm.fit2)[2]*x+(x^2)*coef(lm.fit2)[3],
+               y_hat_lin = coef(lm.fit)[1]+ coef(lm.fit)[2]*x)
+
+Boston$y_hat = coef(lm.fit2)[1]+ coef(lm.fit2)[2]*x+(x^2)*coef(lm.fit2)[3])
+
+ggplot()+
+  geom_line(data =df, aes(x,y_hat), col = "red")+
+  geom_line(data =df, aes(x,y_hat_lin), col = "blue")+
+geom_point(data =Boston, aes(lstat,medv), alpha = 0.5)+
+  xlim(c(0,40))
+
+# Anova test results state that these 2 models are significantly different
+anova(lm.fit, lm.fit2)
+
+
+# changing plots to 4 (2X2) plots
+par(mfrow=c(2,2))
+# plotting the model with quadratic fit of lstat
+plot(lm.fit)
+plot(lm.fit2)
+# There is little discernible pattern in the residuals if we include the quadratic model
+
+# Fitting polynomial plots
+lm5 = lm(medv~ poly(lstat,5))
+summary(lm5)
+
+anova(lm.fit2, lm5)
+
+# working with log/exponential models
+lm.fit_e = lm(medv~exp(-lstat), data =Boston)
+summary(lm.fit_e)
+```
+
+# 3.6.6
+
+```{r}
+Carseats = Carseats
+
+lm.fit_cat = lm(Sales~ShelveLoc, Carseats)
+summary(lm.fit_cat)
+contrasts(Carseats$ShelveLoc)
+
+# Recoding to change baseline category
+Carseats$ShelveLoc <- relevel(Carseats$ShelveLoc, ref = "Medium")
+
+
+```
+
+
