@@ -1,0 +1,183 @@
+---
+title: "Lab 4- 2/5/21"
+author: "Nadir Nibras"
+date: "2/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# clear workspace variables
+rm(list = ls());
+# it means ctrl+L. clear window
+cat("\014") 
+# close all plots
+graphics.off() 
+```
+
+
+```{r}
+# install.packages("olsrr")
+library(olsrr)
+model <- lm(mpg ~ disp + hp + wt + qsec, data = mtcars)
+ols_plot_resid_qq(model)
+mtcars
+```
+
+# Residual Normality Test
+Test for detecting violation of normality assumption.
+
+```{r}
+model <- lm(mpg ~ disp + hp + wt + qsec, data = mtcars)
+ols_test_normality(model)
+```
+```{r}
+# ols_test_correlation(model)
+```
+# Residual vs Fitted Values Plot
+It is a scatter plot of residuals on the y axis and fitted values on the x axis to detect non-linearity, unequal error variances, and outliers.
+
+## Characteristics of a well behaved residual vs fitted plot:
+The residuals spread randomly around the 0 line indicating that the relationship is linear.
+The residuals form an approximate horizontal band around the 0 line indicating homogeneity of error variance.
+No one residual is visibly away from the random pattern of the residuals indicating that there are no outliers.
+
+
+```{r}
+model <- lm(mpg ~ disp + hp + wt + qsec, data = mtcars)
+ols_plot_resid_fit(model)
+```
+# Residual Histogram
+Histogram of residuals for detecting violation of normality assumption.
+```{r}
+ols_plot_resid_hist(model)
+```
+
+# Starting LAB 2
+
+```{r}
+library(car)
+fit <- lm(mpg~disp+hp+wt+drat, data=mtcars)
+```
+
+
+# Outliers
+```{r}
+# Assessing Outliers
+# outlierTest(fit) # Bonferonni p-value for most extreme obs
+qqPlot(fit, main="QQ Plot") #qq plot for studentized resid
+leveragePlots(fit) # leverage plots
+```
+
+# Influential Observations
+
+```{r}
+# avPlots(fit)
+
+# Cook's D plot
+# identify D values > 4/(n-k-1)
+cutoff <- 4/((nrow(mtcars)-length(fit$coefficients)-2))
+plot(fit, which=4, cook.levels=cutoff)
+# Influence Plot
+influencePlot(fit, id.method="identify", main="Influence Plot", sub="Circle size is proportial to Cook's Distance" )
+```
+# Non-normality
+
+```{r}
+# Normality of Residuals
+# distribution of studentized residuals
+# library(MASS)
+sresid <- studres(fit)
+hist(sresid, freq=FALSE,
+   main="Distribution of Studentized Residuals")
+xfit<-seq(min(sresid),max(sresid),length=40)
+yfit<-dnorm(xfit)
+lines(xfit, yfit)
+```
+
+
+# Multi-collinearity
+```{r}
+# Evaluate Collinearity
+vif(fit) # variance inflation factors
+sqrt(vif(fit)) > 2 # problem?
+
+plot(mtcars)
+```
+
+# Nonlinearity
+```{r}
+# Evaluate Nonlinearity
+# component + residual plot
+# crPlots(fit)
+# Ceres plots
+# ceresPlots(fit)
+```
+
+
+# Non-independence of Errors
+```{r}
+# Test for Autocorrelated Errors
+durbinWatsonTest(fit)
+```
+
+
+# Robust regression- LAB 3
+```{r}
+library(foreign)
+library(MASS)
+
+cdata <- read.dta("https://stats.idre.ucla.edu/stat/data/crime.dta")
+summary(cdata)
+```
+
+
+# In most cases, we begin by running an OLS regression and doing some diagnostics. We will begin by running an OLS regression and looking at diagnostic plots examining residuals, fitted values, Cook’s distance, and leverage.
+```{r}
+summary(ols <- lm(crime ~ poverty + single, data = cdata))
+opar <- par(mfrow = c(2,2), oma = c(0, 0, 1.1, 0))
+plot(ols, las = 1)
+
+# taking a closer look at outliers based on previous plot
+par(opar)
+cdata[c(9, 25, 51), 1:2]
+
+```
+
+# checking which observations have a large cook's distance (> 4/n)
+```{r}
+d1 <- cooks.distance(ols)
+# The standardized residuals. These are normalized to unit variance, fitted including the current data point.
+r <- stdres(ols)
+a <- cbind(cdata, d1, r)
+a[d1 > 4/nrow(a), ]
+```
+
+
+```{r}
+rabs <- abs(r)
+a <- cbind(a, rabs)
+asorted <- a[order(-rabs), ]
+asorted[1:10, ]
+```
+
+
+# Running robust regression (finally)
+```{r}
+# summary(model1 <- lm(crime ~ poverty + single, data = cdata))
+summary(rr.huber <- rlm(crime ~ poverty + single, data = cdata))
+
+hweights <- data.frame(state = cdata$state, resid = rr.huber$resid, weight = rr.huber$w)
+hweights2 <- hweights[order(rr.huber$w), ]
+hweights2[1:15, ]
+```
+
+# Running it again, but with the bisquare weighting function
+```{r}
+
+```
+
