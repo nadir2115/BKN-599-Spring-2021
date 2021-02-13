@@ -1,0 +1,170 @@
+---
+title: "Lab 5- in class worksheet"
+author: "Nadir Nibras"
+date: "2/12/2021"
+output: html_document
+view(Auto)
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list = ls());
+cat("\014")  
+graphics.off() 
+
+library(ggplot2)
+library(dplyr)
+```
+
+# 5.3.1 - aThe validation set approach
+```{r}
+library (ISLR)
+set.seed (1)
+attach(Auto)
+
+train = sample(392,196)
+
+lm.fit =lm(mpg~ horsepower ,data=Auto ,subset =train )
+
+mean( (mpg -predict(lm.fit ,Auto))[-train]^2) # estimated test MSE
+```
+
+We can use the poly() function to estimate the test error for the polynomial and cubic regressions.
+
+```{r}
+lm.fit2=lm(mpg~poly(horsepower ,2) ,data=Auto ,subset =train )
+mean((mpg -predict (lm.fit2 ,Auto))[-train ]^2)
+
+lm.fit3=lm(mpg~poly(horsepower ,3) ,data=Auto ,subset =train )
+mean((mpg -predict (lm.fit3 ,Auto))[-train ]^2)
+```
+
+If we choose a different training set instead, then we will obtain somewhat different errors on the validation set.
+```{r}
+set.seed (2)
+train=sample (392 ,196)
+lm.fit =lm(mpg~horsepower ,subset =train)
+mean((mpg -predict (lm.fit ,Auto))[-train ]^2)
+lm.fit2=lm(mpg~poly(horsepower ,2) ,data=Auto ,subset =train )
+mean((mpg -predict (lm.fit2 ,Auto))[-train ]^2)
+lm.fit3=lm(mpg~poly(horsepower ,3) ,data=Auto ,subset =train )
+mean((mpg -predict (lm.fit3 ,Auto))[-train ]^2)
+```
+# 5.3.2 LOOCV
+
+```{r}
+glm.fit=glm(mpg ~horsepower ,data=Auto)
+coef(glm.fit)
+
+lm.fit =lm(mpg ~horsepower ,data=Auto)
+coef(lm.fit)
+```
+In this lab, we will perform linear regression using the glm() function rather than the lm() function because
+the latter can be used together with cv.glm(). The cv.glm() function is
+part of the boot library.
+
+
+```{r}
+library (boot)
+glm.fit=glm(mpg~horsepower ,data=Auto)
+cv.err =cv.glm(Auto ,glm.fit)
+
+cv.err$delta
+```
+```{r}
+cv.error=rep (0,5)
+for (i in 1:5){
+ glm.fit=glm(mpg~poly(horsepower ,i),data=Auto)
+ cv.error[i]=cv.glm (Auto ,glm.fit)$delta [1]
+ }
+ cv.error
+ # As in Figure 5.4, we see a sharp drop in the estimated test MSE between
+# the linear and quadratic fits, but then no clear improvement from using
+# higher-order polynomials.
+
+````
+# 5.3.3. K-fold cross validation
+
+```{r}
+set.seed (17)
+cv.error.10= rep (0 ,10)
+for (i in 1:10) {
+ glm.fit=glm(mpg~poly(horsepower ,i),data=Auto)
+ cv.error.10[i]=cv.glm (Auto ,glm.fit ,K=10) $delta [1]
+}
+ cv.error.10
+```
+
+# 6.5.1
+```{r}
+fix(Hitters )
+names(Hitters )
+
+dim(Hitters )
+sum(is.na(Hitters$Salary))
+
+# removing missing values
+Hitters =na.omit(Hitters )
+dim(Hitters )
+sum(is.na(Hitters$Salary))
+```
+
+
+```{r}
+library(leaps)
+regfit.full = regsubsets(Salary~.,Hitters)
+summary (regfit.full)
+```
+
+By default, regsubsets() only reports results up to the best eight-variable model. 
+But the nvmax option can be used in order to return as many variables as are desired. Here we fit up to a 19-variable model.
+```{r}
+regfit.full=regsubsets (Salary~.,data=Hitters ,nvmax =19)
+summary (regfit.full)
+```
+
+```{r}
+reg.summary =summary (regfit.full)
+reg.summary$rsq
+```
+Plotting RSS, adjusted R2, Cp, and BIC for all of the models at once will
+help us decide which model to select. 
+Note the type="l" option tells R to connect the plotted points with lines
+
+```{r}
+par(mfrow =c(1,2))
+plot(reg.summary$rss ,xlab=" Number of Variables ",ylab=" RSS", type="l")
+plot(reg.summary$adjr2 ,xlab =" Number of Variables ", ylab=" Adjusted RSq",type="l")
+```
+```{r}
+which.max(reg.summary$adjr2)
+plot(reg.summary$adjr2 ,xlab =" Number of Variables ",ylab=" Adjusted RSq",type="l")
+points (11, reg.summary$adjr2[11], col ="red",cex =2, pch =20)
+```
+```{r}
+plot(reg.summary$cp ,xlab =" Number of Variables ",ylab="Cp", type="l")
+which.min (reg.summary$cp )
+points(10, reg.summary$cp [10], col ="red",cex =2, pch =20)
+
+which.min (reg.summary$bic )
+plot(reg.summary$bic ,xlab=" Number of Variables ",ylab=" BIC",
+type="l")
+ points (6, reg.summary$bic [6], col =" red",cex =2, pch =20)
+```
+# 6.5.2 Forward and Backward Stepwise Selection
+
+We can also use the regsubsets() function to perform forward stepwise
+or backward stepwise selection, using the argument method="forward" or
+method="backward".
+
+```{r}
+regfit.fwd=regsubsets (Salary~.,data=Hitters ,nvmax =19,
+method ="forward")
+summary (regfit.fwd )
+regfit.bwd=regsubsets (Salary~.,data=Hitters ,nvmax =19,
+method ="backward")
+summary (regfit.bwd )
+```
