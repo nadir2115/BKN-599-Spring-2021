@@ -1,0 +1,146 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+# 6.5.3
+
+```{r}
+library(ISLR)
+library(leaps)
+Hitters =na.omit(Hitters )
+set.seed (1)
+# taking a sample (sample size is number of hitters) from 2 options (true/false)
+train=sample (c(TRUE ,FALSE), nrow(Hitters),rep=TRUE)
+
+Hitters
+test =(! train )
+ 
+# Performing bet subset selection on training sett
+regfit.best_t=regsubsets (Salary~.,data=Hitters [train ,],nvmax =19)
+ 
+# Testing model on test set
+# The model.matrix() function is used in many regression packages for build     ing an “X” matrix from data.
+test.mat=model.matrix (Salary~.,data=Hitters [test ,])
+
+
+# Running a loop for each size of the model
+val.errors =rep(NA ,19)
+for(i in 1:19){
+ # extracts subset for varying model sizes
+ coefi=coef(regfit.best ,id=i)
+ print(coefi)
+ pred=test.mat [,names(coefi)]%*% coefi
+ val.errors [i]= mean(( Hitters$Salary[test]-pred)^2)
+}
+
+
+
+# Notice that model with 10 returns the best/lowest test errors
+ val.errors
+ 
+ coef(regfit.best ,10)
+
+ # Writing our own predict version to save time
+predict.regsubsets =function (object ,newdata ,id ,...){
+ form= as.formula (object$call[[2]])
+ mat= model.matrix (form ,newdata )
+ coefi = coef(object ,id=id)
+ xvars = names (coefi )
+ mat[,xvars ]%*% coefi
+}
+
+# perfordming best subset regression on the full dataset
+regfit.best=regsubsets (Salary~.,data=Hitters ,nvmax =19)
+coef(regfit.best ,10)
+ 
+coef(regfit.best_t ,10)
+
+
+
+# Repeating the first part of the lab but with cross validation so we can take the average error for each iteration
+
+k=10
+set.seed (1)
+folds=sample (1:k,nrow(Hitters),replace =TRUE)
+
+cv.errors =matrix (NA ,k,19, dimnames =list(NULL , paste (1:19)))
+
+for(j in 1:k){
+ best.fit =regsubsets(Salary~.,data=Hitters [folds !=j,], nvmax =19)
+ for(i in 1:19) {
+ pred=predict (best.fit ,Hitters [folds ==j,], id=i)
+ cv.errors [j,i]=mean( (Hitters$Salary[folds ==j]-pred)^2)
+ }
+}
+
+cv.errors
+
+mean.cv.errors =apply(cv.errors ,2, mean)
+
+
+# We now perform best subset selection on the full data set in order to obtain the 11-variable model.
+reg.best=regsubsets (Salary~.,data=Hitters , nvmax =19)
+coef(reg.best ,11)
+
+```
+
+
+# 5.3.4 The bootstrap
+
+```{r}
+alpha.fn=function (data ,index){
+ X=data$X [index]
+ Y=data$Y [index]
+ return ((var(Y)-cov (X,Y))/(var(X)+var(Y) -2* cov(X,Y)))
+ }
+
+```
+
+
+```{r}
+Portfolio = Portfolio
+alpha.fn(Portfolio ,1:100)
+
+set.seed (1)
+alpha.fn(Portfolio ,sample (100 ,100 , replace =T))
+
+library(boot)
+
+boot(Portfolio ,alpha.fn,R=1000)
+```
+# Estimating the Accuracy of a Linear Regression Model
+```{r}
+boot.fn=function (data,index)
+return (coef(lm(mpg~ horsepower ,data=data ,subset =index)))
+
+
+boot(Auto ,boot.fn ,1000)
+```
+
+```{r}
+boot.fn(Auto ,1:392)
+
+library(ggplot2)
+ggplot(Auto, aes(mpg,horsepower))+geom_point()
+```
+
+```{r}
+summary (lm(mpg~horsepower ,data=Auto))$coef
+```
+
+
+```{r}
+boot.fn=function (data ,index )
+coefficients(lm(mpg~horsepower +I( horsepower ^2) ,data=data ,subset =index))
+set.seed (1)
+boot(Auto ,boot.fn ,1000)
+
+
+# Now trying summary of quadratic model
+summary (lm(mpg~horsepower +I(horsepower ^2) ,data=Auto))$coef
+```

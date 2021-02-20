@@ -157,7 +157,7 @@ type="l")
 # 6.5.2 Forward and Backward Stepwise Selection
 
 We can also use the regsubsets() function to perform forward stepwise
-or backward stepwise selection, using the argument method="forward" or
+or backward stepwise selection, using the argument method="forward" or    
 method="backward".
 
 ```{r}
